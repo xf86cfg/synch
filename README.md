@@ -88,7 +88,7 @@ cd /home/asterisk
 mkdir -p publish && cd publish
 wget https://github.com/xf86cfg/synch/releases/download/v1.0b/synch-linux-x64.tar.gz
 tar -zxvf synch-linux-x64.tar.gz && cd synch-linux-x64
-sudo chmod +x *.sh
+chmod +x *.sh
 ```
 <br></br>
 ## Installation
