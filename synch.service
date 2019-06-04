@@ -5,8 +5,8 @@
     Type=simple
     Restart=always
     RestartSec=1
-    User=${USER}
-    ExecStart=${INSTALL_DIR}/${EXEC_FILE}
+    User=__USER__
+    ExecStart=__INSTALL_DIR__/__EXEC_FILE__
     StandardOutput=syslog
     StandardError=syslog
     SyslogIdentifier=synch
