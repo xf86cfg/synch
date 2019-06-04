@@ -1,0 +1,14 @@
+    [Unit]
+    Description=Synch service
+    After=network.target
+    [Service]
+    Type=simple
+    Restart=always
+    RestartSec=1
+    User=${USER}
+    ExecStart=${INSTALL_DIR}/${EXEC_FILE}
+    StandardOutput=syslog
+    StandardError=syslog
+    SyslogIdentifier=synch
+    [Install]
+    WantedBy=multi-user.target
