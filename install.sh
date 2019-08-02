@@ -56,7 +56,7 @@ else
 fi
 
 echo_info "\nCopying ${BUILD_NAME} build into ${INSTALL_DIR}"
-if sudo cp $BUILD_DIR/* ${INSTALL_DIR}; then
+if sudo cp -r $BUILD_DIR/* ${INSTALL_DIR}; then
     echo $INSTALL_DIR > $INSTALL_DESCRIPTOR
     echo_success "OK."
 else
