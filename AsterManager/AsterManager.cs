@@ -4,6 +4,7 @@ using AsterNET.Manager;
 using AsterNET.Manager.Action;
 using AsterNET.Manager.Response;
 using Microsoft.Extensions.Options;
+using System.Linq;
 
 namespace synch
 {
@@ -26,17 +27,20 @@ namespace synch
                 options.Value.Username,
                 options.Value.Password
                 );
+            _managerConnection.DefaultEventTimeout = 10000;
+            _managerConnection.DefaultResponseTimeout = 10000;
         }
 
-        public IList<string> GetConfig(string filename, KeyValuePair<string, string> filter = new KeyValuePair<string, string>())
+        public Tuple<IList<string>, IList<string>> GetConfig(string filename, KeyValuePair<string, string> filter = new KeyValuePair<string, string>())
         {
             IList<string> config;
+            IList<string> routingConfig;
             try
             {
                 var response = SendRequest(new GetConfigAction(filename));
                 if (!response.IsSuccess()) return null; //File doesn't exist
                 var r = response as GetConfigResponse;
-                if (r.Attributes == null || r.Categories == null) return new List<string>(); //File empty
+                if (r.Attributes == null || r.Categories == null) return new Tuple<IList<string>, IList<string>>(default, default); //File empty
                 var p = new AsterConfParser();
                 var parsedConfig =
                     filter.Key == null || filter.Value == null ?
@@ -44,13 +48,16 @@ namespace synch
                     p.ParseConfigAttributes(r.Categories, r.Attributes, filter);
                 var b = new AsterConfBuilder();
                 config = b.BuildConfig(parsedConfig);
+                routingConfig = b.BuildRoutingConfig(parsedConfig);
             }
             catch (Exception e)
             {
                 throw new InvalidOperationException($"Failed to get config {filename}", e);
             }
-            return config;
+            return new Tuple<IList<string>, IList<string>>(config, routingConfig);
         }
+
+        // public IList<string> GetConfigHeaders
 
         public void BackupConfig(string filename, string backupFilename)
         {
