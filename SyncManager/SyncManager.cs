@@ -39,7 +39,7 @@ namespace synch
         }
 
         private Timer _timer;
-        private IList<string> _remoteConfig;
+        private Tuple<IList<string>, IList<string>> _remoteConfig;
         private IList<string> _localConfig;
         private AsterManager _remoteManager;
         private AsterManager _localManager;
@@ -100,7 +100,7 @@ namespace synch
                     SyncInProgress = false;
                     SyncState = SyncState.Unsynced;
                 }
-                else if (!_remoteConfig.SequenceEqual(_localConfig))
+                else if (!_remoteConfig.Item1.SequenceEqual(_localConfig))
                 {
                     _logger.LogInformation("Diff found");
                     SyncInProgress = false;
@@ -137,7 +137,7 @@ namespace synch
             try
             {
                 SetupLocalDirectory(_workDirectory);
-                if (_remoteConfig == null)
+                if (_remoteConfig == null || _remoteConfig.Item1 == default || _remoteConfig.Item2 == default)
                 {
                     throw new InvalidOperationException("Remote config cannot be null. Run CheckSyncState to retrieve remote and local configs");
                 }
@@ -147,8 +147,10 @@ namespace synch
                     BackupLocalConfig(_localFilename, RelativeConfigPath($"{_localFilename}.backup_{JobId}"));
                     _backupLocalConfig = false;
                 }
-                CreateLocalConfigCandidate(_remoteConfig, AbsoluteConfigPath($"{_localFilename}.candidate_{JobId}"));
+                CreateLocalConfigCandidate(_remoteConfig.Item1, AbsoluteConfigPath($"{_localFilename}.candidate_{JobId}"));
+                CreateLocalConfigCandidate(_remoteConfig.Item2, AbsoluteConfigPath($"{_localFilename}_routing.candidate_{JobId}"));
                 UpdateLocalConfig(RelativeConfigPath($"{_localFilename}.candidate_{JobId}"), _localFilename);
+                UpdateLocalConfig(RelativeConfigPath($"{_localFilename}_routing.candidate_{JobId}"), $"synch_routing_{_localFilename}");
                 SyncState = SyncState.Synced;
             }
             catch (Exception e)
@@ -181,7 +183,7 @@ namespace synch
             _logger.LogInformation("Service has been stopped");
         }
 
-        private IList<string> GetRemoteConfig(string filename)
+        private Tuple<IList<string>, IList<string>> GetRemoteConfig(string filename)
         {
             _logger.LogTrace($"Getting remote config {filename}");
             return _remoteManager.GetConfig(filename, _filter);
@@ -190,7 +192,7 @@ namespace synch
         private IList<string> GetLocalConfig(string filename)
         {
             _logger.LogTrace($"Getting local config {filename}");
-            return _localManager.GetConfig(filename);
+            return _localManager.GetConfig(filename).Item1;
         }
 
         private void UpdateLocalConfig(string sourceFilename, string destinationFilename)
@@ -198,6 +200,8 @@ namespace synch
             _logger.LogInformation($"Updating local config {destinationFilename} from {sourceFilename}");
             _localManager.UpdateConfig(sourceFilename, destinationFilename);
         }
+
+        // TODO: Update local routing config from config candidate
 
         private void BackupLocalConfig(string filename, string backupFilename)
         {
@@ -209,7 +213,7 @@ namespace synch
             _logger.LogInformation($"Creating local candidate config: {candidateFilename}");
             File.WriteAllLines(candidateFilename, config);
         }
-        
+
         private void SetupLocalDirectory(string directory)
         {
             var fullPath = $"{_localConfigsPath}{directory}";
